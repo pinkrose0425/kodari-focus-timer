@@ -19,8 +19,9 @@ const Timer = () => {
                     return prevTime - 1;
                 });
             }, 1000);
-        } else if (timeLeft === 0) {
+        } else if (timeLeft === 0 && isActive) {
             setIsActive(false);
+            playAlarm();
         }
 
         return () => {
@@ -45,6 +46,41 @@ const Timer = () => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const playAlarm = () => {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+        oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.5); // Drop to A4
+
+        gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.5);
+
+        // Play a second beep
+        setTimeout(() => {
+            const osc2 = audioContext.createOscillator();
+            const gain2 = audioContext.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, audioContext.currentTime);
+            osc2.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.5);
+            gain2.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.start();
+            osc2.stop(audioContext.currentTime + 0.5);
+        }, 600);
     };
 
     // Cute/Soothing Colors
